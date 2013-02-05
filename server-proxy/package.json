@@ -1,0 +1,25 @@
+{
+  "name": "ws-tether-server-proxy",
+  "version": "0.0.1",
+  "description": "proxy server for swap ws to http",
+  "main": "./bin/start.sh",
+  "scripts": {
+    "start": "./bin/start.sh",
+    "test": "node ./test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/georgeOsdDev/ws-tether"
+  },
+  "keywords": [
+    "websocket",
+    "proxy",
+    "tethering"
+  ],
+  "author": "Takeharu.Oshida",
+  "license": "MIT",
+  "dependencies": {
+    "websocket.io": "~0.2.1",
+    "validator": "~0.4.22"
+  }
+}

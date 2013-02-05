@@ -1,0 +1,58 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  padding-left: auto;
+  letter-spacing: 0.02em;
+  margin: 0px;
+  text-align: center;
+  font-size: 90%;
+}
+a {
+  color: #00b7ff;
+}
+table {
+  max-width: 100%;
+  background-color: transparent;
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.table {
+  font-size: 28px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+.table th,
+.table td {
+  padding: 8px;
+  line-height: 80px;
+  text-align: center;
+  vertical-align: top;
+  width: 120px;
+}
+.table th {
+  border-top-style: none;
+  font-weight: bold;
+}
+.table thead tr th {
+  vertical-align: bottom;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  -webkit-box-shadow: #fff 0 1px 0px;
+}
+.table caption + thead trfirst-child th,
+.table caption + thead trfirst-child td,
+.table colgroup + thead trfirst-child th,
+.table colgroup + thead trfirst-child td,
+.table theadfirst-child trfirst-child th,
+.table theadfirst-child trfirst-child td {
+  border-top: 0;
+}
+.table tbody + tbody {
+  border-top: 2px solid #ddd;
+}
+#info {
+  padding-top: 120px;
+}
+.menu ul li {
+  list-style-type: none;
+}

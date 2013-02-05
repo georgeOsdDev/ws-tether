@@ -1,0 +1,37 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <title>ws-tether-bridge</title>
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+</head>
+<body>
+  <center>
+    <h1>Open this page with your iPhone</h1>
+    <div id="info" class="info">
+      <table id="status" class="table">
+        <thead>
+          <th>Your Local Mac</th>
+          <th>&nbsp;&nbsp;</th>
+          <th>Proxy Server</th>
+        </thead>
+        <tbody>
+          <tr>
+            <td id="url_local"></td>
+            <td>URL</td>
+            <td id="url_proxy"></td>
+          </tr>
+          <tr>
+            <td><image id="status_local"/></td>
+            <td>Status</td>
+            <td><image id="status_proxy"/></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </center>
+  <script src="/javascripts/jquery-1.8.2.min.js"></script>
+  <script src="/javascripts/config.js"></script>
+  <script src="/javascripts/bridge.js"></script>
+</body>
+</html>
