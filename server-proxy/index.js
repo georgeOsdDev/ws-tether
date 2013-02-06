@@ -25,9 +25,10 @@ server.on("connection",function(socket) {
       var opt,req;
       // avoid gzip
       delete data.headers["Accept-Encoding"];
+      console.log(data);
       opt = {
-        "url":data.requestUrl,
         "host":data.host,
+        "hostname":data.hostname,
         "port":data.port || 80,
         "path":data.path,
         "method":data.method || "GET",

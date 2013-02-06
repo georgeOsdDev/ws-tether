@@ -30,6 +30,7 @@ var staticServer = http.createServer(function(req,res){
         "key":hash,
         "requestUrl":requestUrl,
         "host":requestUrl.host.split(":")[0],
+        "hostname":requestUrl.hostname,
         "port":requestUrl.port || 80,
         "path":requestUrl.path,
         "method":req.method || "GET",
