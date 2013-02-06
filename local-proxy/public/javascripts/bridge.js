@@ -4,7 +4,7 @@
         ,proxyWs = new WebSocket(config.serverProxy);  // Proxy Server
 
     setUpWS(localWs,proxyWs,"local");
-    setUpWS(proxyWs,localWs,"proxy");
+    setUpWS(proxyWs,localWs,"server");
 
     function setUpWS(fromWs,toWs,id){
       fromWs.onopen = function() {
@@ -20,7 +20,6 @@
         fromWs.send(JSON.stringify(data));
       };
       fromWs.onmessage = function(message) {
-        console.log(message);
         //dispatch message
         toWs.send(message.data);
       };
