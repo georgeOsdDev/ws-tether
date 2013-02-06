@@ -1,21 +1,23 @@
-
-/**
- * Module dependencies.
+/*
+ * ws-tether | local-proxy
+ * version 0.0.1
+ * author: Takeharu.Oshida
+ * https://github.com/georgeOsdDev/ws-tether
  */
 
 var url       = require('url'),
     http      = require('http'),
     path      = require('path'),
     fs        = require('fs'),
+    zlib      = require("zlib"),
     ws        = require("websocket.io"),
-    sanitize  = require('validator').sanitize,
     args      = process.argv;
 
 //var node = args[0];
 //var path = args[1];
 var port    = args[2],
     sockets = {},
-    buffer  = {};
+    queue  = {};
 
 var staticServer = http.createServer(function(req,res){
   var requestUrl = url.parse(req.url);
@@ -35,7 +37,7 @@ var staticServer = http.createServer(function(req,res){
         "body":req.body || ""
       };
 
-      buffer[hash] = {
+      queue[hash] = {
         "req":req,
         "res":res
       }
@@ -66,7 +68,7 @@ var staticServer = http.createServer(function(req,res){
     }
     fs.readFile(__dirname + "/public" + requestUrl.path, function(err, data) {
       if(!err) {
-        res.writeHead(200, {'Content-Type': contentType,});
+        res.writeHead(200, {'Content-Type': contentType});
         res.end(data);
       } else {
         res.writeHead(404, {'Content-Type': 'text/html'});
@@ -85,14 +87,21 @@ server.on('connection', function (socket) {
     var data = JSON.parse(message);
     if (data.isInit){
       sockets[data.name] = socket;
-    }else if(data.isHttpRes && buffer[data.key]){
-      var res,statusCode,response,responseHeaders;
-      res = buffer[data.key].res;
+    }else if(data.isHttpRes && queue[data.key]){
+      var res,statusCode,response,headers,body;
+      res = queue[data.key].res;
       statusCode = data.statusCode;
-      headers = data.responseHeaders;
-      response = sanitize(data.response).entityDecode();
-      res.writeHead(statusCode, headers);
-      res.end(response);
+      headers = data.headers;
+      body = new Buffer(data.response, 'base64');
+      zlib.inflate(body, function(err, inflated) {
+        if (!err) {
+          res.writeHead(statusCode, headers);
+          res.end(inflated);
+        }else{
+          res.writeHead(500, {'Content-Type': 'text/html'});
+          res.end("<html><body><p style='font-size:28px;'>500 Sorry :(<p></body></html>");
+        }
+      });
     }
   });
   socket.on('close', function () {
