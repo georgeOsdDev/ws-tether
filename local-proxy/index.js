@@ -21,7 +21,6 @@ var port    = args[2],
 
 var staticServer = http.createServer(function(req,res){
   var requestUrl = url.parse(req.url);
-  console.log(requestUrl);
   if (requestUrl.host && requestUrl.hostname != "localhost"){
     if (sockets.bridge) {
       doHttpProxy(req,res);
