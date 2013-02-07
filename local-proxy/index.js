@@ -10,7 +10,6 @@ var url       = require('url'),
     net       = require('net'),
     path      = require('path'),
     fs        = require('fs'),
-    zlib      = require("zlib"),
     ws        = require("websocket.io"),
     args      = process.argv;
 
@@ -22,6 +21,7 @@ var port    = args[2],
 
 var staticServer = http.createServer(function(req,res){
   var requestUrl = url.parse(req.url);
+  console.log(requestUrl);
   if (requestUrl.host && requestUrl.hostname != "localhost"){
     if (sockets.bridge) {
       doHttpProxy(req,res);
@@ -30,6 +30,7 @@ var staticServer = http.createServer(function(req,res){
       res.end("<html><body><p style='font-size:28px;'>bridge is not ready :(<p></body></html>");
     }
   }else{
+    // for bridge.html
     var extname = path.extname(req.url),
         contentType = 'text/plain';
     switch (extname) {
@@ -76,31 +77,15 @@ server.on('connection', function (socket){
       statusCode = data.statusCode;
       headers = data.headers;
       res.writeHead(statusCode, headers);
-      if(headers["content-encoding"] === "gzip"){
-        var buf = new Buffer(data.response,"base64");
-        res.end(buf);
-      }else{
-        res.end(data.response.toString("utf-8"));
-      }
-
-      // var body = new Buffer(data.response.toString(), 'base64');
-      // zlib.inflate(body, function(err, inflated) {
-      //   if (!err) {
-      //     res.writeHead(statusCode, headers);
-      //     console.log(inflated);
-      //     res.end(inflated.toString());
-      //   }else{
-      //     res.writeHead(500, {'Content-Type': 'text/html'});
-      //     res.end("<html><body><p style='font-size:28px;'>500 Sorry :(<p></body></html>");
-      //   }
-      // });
-      // res.end(data.response);
+      var buf = new Buffer(data.response,"base64");
+      res.end(buf);
     }else if(data.isHttpErr && queue[data.key]){
+      console.log("http err");
       res = queue[data.key].res;
       res.writeHead(500, {'Content-Type': 'text/html'});
       res.end("<html><body><p style='font-size:28px;'>500 proxy server error :(<p></body></html>");
     }else if(data.isHttpsConnect && queue[data.key]){
-      console.log("connected");
+      console.log("https connect");
       queue[data.key].socket.write('HTTP/1.1 200 Connection Established\r\n' +
                                   'Proxy-agent: Node-Proxy\r\n' +
                                   '\r\n');
@@ -109,6 +94,7 @@ server.on('connection', function (socket){
       var buf = new Buffer(data.dataStr,"base64");
       queue[data.key].socket.write(buf);
     }else if(data.isHttpsEnd && queue[data.key]){
+      console.log("https end");
       queue[data.key].socket.end();
     }
   });

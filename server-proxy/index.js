@@ -31,60 +31,30 @@ server.on("connection",function(socket) {
         "port":data.port || 80,
         "path":data.path,
         "method":data.method || "GET",
-        "headers":data.headers || "",
-        "encoding":null
+        "headers":data.headers || ""
       };
       var req = http.request(opt, function(res) {
-        res.setEncoding("utf-8");
-        var buffer = [];
+        var chunkList = [];
 
         res.on("data",function(chunk){
-          buffer.push(chunk);
+          chunkList.push(chunk);
         });
 
         res.on("end",function(){
-          var sendData;
-          if(res.headers["content-encoding"] === "gzip"){
-              // sendData = {
-              //   "isHttpRes":true,
-              //   "key":data.key,
-              //   "statusCode":res.statusCode,
-              //   "headers":res.headers,
-              //   "response":buffer.toString("base64")
-              // };
-              // socket.send(JSON.stringify(sendData));
-            zlib.gunzip(buffer.join(""),function(e,str){
-              if(e){
-                console.log(e);
-                var errData = {
-                  "isHttpErr":true,
-                  "key":data.key
-                };
-                socket.send(JSON.stringify(errData));
-              }else{
-                console.log(str);
-                var sendData = {
-                  "isHttpRes":true,
-                  "key":data.key,
-                  "statusCode":res.statusCode,
-                  "headers":res.headers,
-                  "response":str
-                };
-                socket.send(JSON.stringify(sendData));
-              }
-            });
-          }else{
-            sendData = {
-              "isHttpRes":true,
-              "key":data.key,
-              "statusCode":res.statusCode,
-              "headers":res.headers,
-              "response":buffer.join("")
-            };
-            socket.send(JSON.stringify(sendData));
-          }
+          var size,buffer,sendData;
+          size = parseInt(res.headers["content-length"],10);
+          buffer = Buffer.concat(chunkList,size);
+          sendData = {
+            "isHttpRes":true,
+            "key":data.key,
+            "statusCode":res.statusCode,
+            "headers":res.headers,
+            "response":buffer.toString("base64")
+          };
+          socket.send(JSON.stringify(sendData));
         });
       });
+
       req.on('error', function(e) {
         console.log('problem with request: ' + e.message);
         var errData = {
@@ -93,17 +63,19 @@ server.on("connection",function(socket) {
         };
         socket.send(JSON.stringify(errData));
       });
+
       if (data.body.length > 0){
         req.write(data.body);
       }
       req.end();
+
     } else if (data.isHttpsConnect){
-      var srvSocket,requestUrl,sendData;
+      var srvSocket,requestUrl;
       requestUrl = data.requestUrl;
       srvSocket = net.connect(requestUrl.port, requestUrl.hostname, function() {
         console.log("https connect");
         tcpClients[data.key] = srvSocket;
-        sendData = {
+        var sendData = {
           "isHttpsConnect":true,
           "key":data.key
         };
@@ -111,17 +83,18 @@ server.on("connection",function(socket) {
         var head = new Buffer(data.head.toString(),"base64");
         srvSocket.write(head);
       });
+
       srvSocket.on("data",function(httpsdata){
-      console.log("https data received");
-        sendData = {
+        var sendData = {
           "isHttpsData":true,
           "key":data.key,
           "dataStr":httpsdata.toString("base64")
         };
         socket.send(JSON.stringify(sendData));
       });
+
       var errhandler = function(){
-        sendData = {
+        var sendData = {
           "isHttpsEnd":true,
           "key":data.key
         };
@@ -144,6 +117,7 @@ server.on("connection",function(socket) {
         console.log('socket closed');
         errhandler();
       });
+
     } else if (data.isHttpsData){
       console.log("https data send");
       var client = tcpClients[data.key];
