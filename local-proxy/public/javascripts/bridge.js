@@ -8,7 +8,7 @@
 
     function setUpWS(fromWs,toWs,id){
       fromWs.onopen = function() {
-        //console.log("connected: "+fromWs.URL);
+        this.isReady = true;
         $("#url_"+id)
           .text(fromWs.URL)
         $("#status_"+id)
@@ -17,11 +17,16 @@
           isInit:true,
           name:"bridge"
         }
-        fromWs.send(JSON.stringify(data));
+        this.send(JSON.stringify(data));
       };
       fromWs.onmessage = function(message) {
-        //dispatch message
-        toWs.send(message.data);
+        if (toWs.isReady){
+          console.log(toWs);
+          console.log(message.data);
+          toWs.send(message.data);
+        }else{
+          toWs.send({"isBridgeFail":true});
+        }
       };
       fromWs.onclose = function() {
         $("#status_"+id)

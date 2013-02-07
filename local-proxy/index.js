@@ -7,6 +7,7 @@
 
 var url       = require('url'),
     http      = require('http'),
+    net       = require('net'),
     path      = require('path'),
     fs        = require('fs'),
     zlib      = require("zlib"),
@@ -22,32 +23,12 @@ var port    = args[2],
 var staticServer = http.createServer(function(req,res){
   var requestUrl = url.parse(req.url);
   if (requestUrl.host && requestUrl.hostname != "localhost"){
-    if(sockets["bridge"]){
-      var hash,sReq;
-      hash = requestUrl.path + (new Date().toLocaleString());
-      sReq = {
-        "isHttpReq":true,
-        "key":hash,
-        "requestUrl":requestUrl,
-        "host":requestUrl.host.split(":")[0],
-        "hostname":requestUrl.hostname,
-        "port":requestUrl.port || 80,
-        "path":requestUrl.path,
-        "method":req.method || "GET",
-        "headers":req.headers || "",
-        "body":req.body || ""
-      };
-
-      queue[hash] = {
-        "req":req,
-        "res":res
-      }
-      sockets["bridge"].send(JSON.stringify(sReq));
-    }else{
+    if (sockets.bridge) {
+      doHttpProxy(req,res);
+    } else {
       res.writeHead(500, {'Content-Type': 'text/html'});
       res.end("<html><body><p style='font-size:28px;'>bridge is not ready :(<p></body></html>");
     }
-
   }else{
     var extname = path.extname(req.url),
         contentType = 'text/plain';
@@ -80,32 +61,109 @@ var staticServer = http.createServer(function(req,res){
 }).listen(port,function(){
   console.log("start local proxy. PORT: "+port);
 });
+staticServer.on("connect",doHttpsProxy);
 
 var server = ws.attach(staticServer);
-server.on('connection', function (socket) {
+server.on('connection', function (socket){
   console.log("conn");
   socket.on("message",function(message) {
     var data = JSON.parse(message);
+    var res,statusCode,response,headers,body;
     if (data.isInit){
       sockets[data.name] = socket;
     }else if(data.isHttpRes && queue[data.key]){
-      var res,statusCode,response,headers,body;
       res = queue[data.key].res;
       statusCode = data.statusCode;
       headers = data.headers;
-      body = new Buffer(data.response, 'base64');
-      zlib.inflate(body, function(err, inflated) {
-        if (!err) {
-          res.writeHead(statusCode, headers);
-          res.end(inflated);
-        }else{
-          res.writeHead(500, {'Content-Type': 'text/html'});
-          res.end("<html><body><p style='font-size:28px;'>500 Sorry :(<p></body></html>");
-        }
-      });
+      res.writeHead(statusCode, headers);
+      if(headers["content-encoding"] === "gzip"){
+        var buf = new Buffer(data.response,"base64");
+        res.end(buf);
+      }else{
+        res.end(data.response.toString("utf-8"));
+      }
+
+      // var body = new Buffer(data.response.toString(), 'base64');
+      // zlib.inflate(body, function(err, inflated) {
+      //   if (!err) {
+      //     res.writeHead(statusCode, headers);
+      //     console.log(inflated);
+      //     res.end(inflated.toString());
+      //   }else{
+      //     res.writeHead(500, {'Content-Type': 'text/html'});
+      //     res.end("<html><body><p style='font-size:28px;'>500 Sorry :(<p></body></html>");
+      //   }
+      // });
+      // res.end(data.response);
+    }else if(data.isHttpErr && queue[data.key]){
+      res = queue[data.key].res;
+      res.writeHead(500, {'Content-Type': 'text/html'});
+      res.end("<html><body><p style='font-size:28px;'>500 proxy server error :(<p></body></html>");
+    }else if(data.isHttpsConnect && queue[data.key]){
+      console.log("connected");
+      queue[data.key].socket.write('HTTP/1.1 200 Connection Established\r\n' +
+                                  'Proxy-agent: Node-Proxy\r\n' +
+                                  '\r\n');
+    }else if(data.isHttpsData && queue[data.key]){
+      console.log("https data received");
+      var buf = new Buffer(data.dataStr,"base64");
+      queue[data.key].socket.write(buf);
+    }else if(data.isHttpsEnd && queue[data.key]){
+      queue[data.key].socket.end();
     }
   });
   socket.on('close', function () {
     //console.log("closed");
   });
 });
+
+function doHttpProxy(req,res){
+  var requestUrl,key,proxyRequest;
+  requestUrl = url.parse(req.url);
+  key = req.url + (new Date().toLocaleString());
+  data = {
+    "isHttpReq":true,
+    "key":key,
+    "requestUrl":requestUrl,
+    "host":requestUrl.host.split(":")[0],
+    "hostname":requestUrl.hostname,
+    "port":requestUrl.port || 80,
+    "path":requestUrl.path,
+    "method":req.method || "GET",
+    "headers":req.headers || "",
+    "body":req.body || ""
+  };
+  queue[key] = {
+    "req":req,
+    "res":res
+  };
+  sockets.bridge.send(JSON.stringify(data));
+}
+
+function doHttpsProxy(req,socket,head){
+  var requestUrl,key,data;
+  requestUrl = url.parse('https://' + req.url);
+  key = req.url + (new Date().toLocaleString());
+  data = {
+    "isHttpsConnect":true,
+    "key":key,
+    "requestUrl":requestUrl,
+    "head":head.toString("base64")
+  };
+
+  queue[key] = {
+    "req":req,
+    "socket":socket
+  };
+  sockets.bridge.send(JSON.stringify(data));
+  socket.on("data",function(data){
+    console.log("httpsdata send");
+    console.log(data);
+    var sendData = {
+      "isHttpsData":true,
+      "key":key,
+      "dataStr":data.toString("base64")
+    };
+    sockets.bridge.send(JSON.stringify(sendData));
+  });
+}
