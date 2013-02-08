@@ -43,12 +43,12 @@ and make the note of Mac's ip-adress on network.
 /sbin/ifconfig
 ```
 
-4.start local proxy on your local Mac.
+4.start local-proxy on your local Mac.
 ```bash
 cd ws-tether/local-proxy && npm start.
 ```
 
-5.start local proxy on your cloud server.
+5.start server-proxy on your cloud server.
 ```bash
 cd ws-tether/server-proxy && npm start.
 ```
@@ -59,6 +59,10 @@ http://Mac'sIP-adress:3000/bridge.html
 ```
 
 7.setup chrome's proxy setting with some extentions(e.g. [Proxy Switchy!](http://switchy.samabox.com/))
+
+use localhost:3000 for all protocol.
+
+![createnetwork](https://raw.github.com/georgeOsdDev/ws-tether/master/asset/setupProxy.png)
 
 8.Enjoy Browsing..
 
