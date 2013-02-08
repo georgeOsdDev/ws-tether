@@ -72,7 +72,6 @@ server.on("connection",function(socket) {
     } else if (data.isHttpsConnect){
       var srvSocket,requestUrl;
       requestUrl = data.requestUrl;
-      console.log("connnnne");
       srvSocket = net.connect(requestUrl.port, requestUrl.hostname, function() {
         console.log("https connect");
         tcpClients[data.key] = srvSocket;
@@ -86,12 +85,14 @@ server.on("connection",function(socket) {
       });
 
       srvSocket.on("data",function(httpsdata){
+        srvSocket.pause();
         var sendData = {
           "isHttpsData":true,
           "key":data.key,
           "dataStr":httpsdata.toString("base64")
         };
         socket.send(JSON.stringify(sendData));
+        srvSocket.resume();
       });
 
       var errhandler = function(){
@@ -122,8 +123,10 @@ server.on("connection",function(socket) {
     } else if (data.isHttpsData && tcpClients[data.key]){
       console.log("https data send");
       var client = tcpClients[data.key];
+      client.pause();
       var d = new Buffer(data.dataStr.toString(),"base64");
       client.write(d);
+      client.resume();
     }
   });
   socket.on('close', function () {

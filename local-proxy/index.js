@@ -89,13 +89,16 @@ server.on('connection', function (socket){
                                   'Proxy-agent: Node-Proxy\r\n' +
                                   '\r\n');
     }else if(data.isHttpsData && clientList[data.key]){
+      clientList[data.key].socket.pause();
       console.log("https data received");
       buf = new Buffer(data.dataStr,"base64");
       clientList[data.key].socket.write(buf);
+      clientList[data.key].socket.resume();
     }else if(data.isHttpsEnd && clientList[data.key]){
       console.log("https end");
       clientList[data.key].socket.end();
     }
+    // socket.resume();
   });
   socket.on('close', function () {
     //console.log("closed");
@@ -103,6 +106,7 @@ server.on('connection', function (socket){
 });
 
 function doHttpProxy(req,res){
+  req.pause();
   var requestUrl,key,proxyRequest;
   requestUrl = url.parse(req.url);
   key = req.url +"_"+ (new Date().getMilliseconds());
@@ -123,6 +127,7 @@ function doHttpProxy(req,res){
     "res":res
   };
   webSockets.bridge.send(JSON.stringify(data));
+  req.resume();
 }
 
 function doHttpsProxy(req,clientSocket,head){
@@ -141,8 +146,8 @@ function doHttpsProxy(req,clientSocket,head){
     "socket":clientSocket
   };
   webSockets.bridge.send(JSON.stringify(data));
-
   clientSocket.on("data",function(data){
+    clientSocket.pause();
     console.log("httpsdata send");
     var sendData = {
       "isHttpsData":true,
@@ -150,5 +155,6 @@ function doHttpsProxy(req,clientSocket,head){
       "dataStr":data.toString("base64")
     };
     webSockets.bridge.send(JSON.stringify(sendData));
+    clientSocket.resume();
   });
 }
