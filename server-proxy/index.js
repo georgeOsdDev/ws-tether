@@ -72,6 +72,7 @@ server.on("connection",function(socket) {
     } else if (data.isHttpsConnect){
       var srvSocket,requestUrl;
       requestUrl = data.requestUrl;
+      console.log("connnnne");
       srvSocket = net.connect(requestUrl.port, requestUrl.hostname, function() {
         console.log("https connect");
         tcpClients[data.key] = srvSocket;
@@ -118,7 +119,7 @@ server.on("connection",function(socket) {
         errhandler();
       });
 
-    } else if (data.isHttpsData){
+    } else if (data.isHttpsData && tcpClients[data.key]){
       console.log("https data send");
       var client = tcpClients[data.key];
       var d = new Buffer(data.dataStr.toString(),"base64");
@@ -130,7 +131,8 @@ server.on("connection",function(socket) {
   });
 });
 
-// process.on('uncaughtException', function(err){
-//   console.log("uncoughtException: " + err);
-// });
+process.on('uncaughtException', function(err){
+  console.log("uncoughtException:");
+  console.log(err);
+});
 

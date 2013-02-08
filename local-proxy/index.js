@@ -16,13 +16,13 @@ var url       = require('url'),
 //var node = args[0];
 //var path = args[1];
 var port    = args[2],
-    sockets = {},
-    queue  = {};
+    webSockets = {},
+    clientList  = {};
 
 var staticServer = http.createServer(function(req,res){
   var requestUrl = url.parse(req.url);
   if (requestUrl.host && requestUrl.hostname != "localhost"){
-    if (sockets.bridge) {
+    if (webSockets.bridge) {
       doHttpProxy(req,res);
     } else {
       res.writeHead(500, {'Content-Type': 'text/html'});
@@ -68,33 +68,33 @@ server.on('connection', function (socket){
   console.log("conn");
   socket.on("message",function(message) {
     var data = JSON.parse(message);
-    var res,statusCode,response,headers,body;
+    var res,statusCode,response,headers,body,buf;
     if (data.isInit){
-      sockets[data.name] = socket;
-    }else if(data.isHttpRes && queue[data.key]){
-      res = queue[data.key].res;
+      webSockets[data.name] = socket;
+    }else if(data.isHttpRes && clientList[data.key]){
+      res = clientList[data.key].res;
       statusCode = data.statusCode;
       headers = data.headers;
       res.writeHead(statusCode, headers);
-      var buf = new Buffer(data.response,"base64");
+      buf = new Buffer(data.response,"base64");
       res.end(buf);
-    }else if(data.isHttpErr && queue[data.key]){
+    }else if(data.isHttpErr && clientList[data.key]){
       console.log("http err");
-      res = queue[data.key].res;
+      res = clientList[data.key].res;
       res.writeHead(500, {'Content-Type': 'text/html'});
       res.end("<html><body><p style='font-size:28px;'>500 proxy server error :(<p></body></html>");
-    }else if(data.isHttpsConnect && queue[data.key]){
+    }else if(data.isHttpsConnect && clientList[data.key]){
       console.log("https connect");
-      queue[data.key].socket.write('HTTP/1.1 200 Connection Established\r\n' +
+      clientList[data.key].socket.write('HTTP/1.1 200 Connection Established\r\n' +
                                   'Proxy-agent: Node-Proxy\r\n' +
                                   '\r\n');
-    }else if(data.isHttpsData && queue[data.key]){
+    }else if(data.isHttpsData && clientList[data.key]){
       console.log("https data received");
-      var buf = new Buffer(data.dataStr,"base64");
-      queue[data.key].socket.write(buf);
-    }else if(data.isHttpsEnd && queue[data.key]){
+      buf = new Buffer(data.dataStr,"base64");
+      clientList[data.key].socket.write(buf);
+    }else if(data.isHttpsEnd && clientList[data.key]){
       console.log("https end");
-      queue[data.key].socket.end();
+      clientList[data.key].socket.end();
     }
   });
   socket.on('close', function () {
@@ -105,7 +105,7 @@ server.on('connection', function (socket){
 function doHttpProxy(req,res){
   var requestUrl,key,proxyRequest;
   requestUrl = url.parse(req.url);
-  key = req.url + (new Date().toLocaleString());
+  key = req.url +"_"+ (new Date().getMilliseconds());
   data = {
     "isHttpReq":true,
     "key":key,
@@ -118,17 +118,17 @@ function doHttpProxy(req,res){
     "headers":req.headers || "",
     "body":req.body || ""
   };
-  queue[key] = {
+  clientList[key] = {
     "req":req,
     "res":res
   };
-  sockets.bridge.send(JSON.stringify(data));
+  webSockets.bridge.send(JSON.stringify(data));
 }
 
-function doHttpsProxy(req,socket,head){
+function doHttpsProxy(req,clientSocket,head){
   var requestUrl,key,data;
   requestUrl = url.parse('https://' + req.url);
-  key = req.url + (new Date().toLocaleString());
+  key = req.url +"_"+ (new Date().getMilliseconds());
   data = {
     "isHttpsConnect":true,
     "key":key,
@@ -136,19 +136,19 @@ function doHttpsProxy(req,socket,head){
     "head":head.toString("base64")
   };
 
-  queue[key] = {
+  clientList[key] = {
     "req":req,
-    "socket":socket
+    "socket":clientSocket
   };
-  sockets.bridge.send(JSON.stringify(data));
-  socket.on("data",function(data){
+  webSockets.bridge.send(JSON.stringify(data));
+
+  clientSocket.on("data",function(data){
     console.log("httpsdata send");
-    console.log(data);
     var sendData = {
       "isHttpsData":true,
       "key":key,
       "dataStr":data.toString("base64")
     };
-    sockets.bridge.send(JSON.stringify(sendData));
+    webSockets.bridge.send(JSON.stringify(sendData));
   });
 }
