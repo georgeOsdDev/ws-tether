@@ -25,7 +25,7 @@
           console.log(message.data);
           toWs.send(message.data);
         }else{
-          toWs.send({"isBridgeFail":true});
+          fromWs.send({"isBridgeFail":true});
         }
       };
       fromWs.onclose = function() {
