@@ -1,6 +1,6 @@
 {
   "name": "ws-tether-local-proxy",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "local proxy server for swap http to ws",
   "main": "./bin/start.sh",
   "scripts": {
@@ -19,6 +19,7 @@
   "author": "Takeharu.Oshida",
   "license": "MIT",
   "dependencies": {
-    "websocket.io": "~0.2.1"
+    "websocket.io": "~0.2.1",
+    "filed": "0.0.7"
   }
 }

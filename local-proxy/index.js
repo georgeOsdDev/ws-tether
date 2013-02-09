@@ -11,6 +11,7 @@ var url       = require('url'),
     path      = require('path'),
     fs        = require('fs'),
     ws        = require("websocket.io"),
+    filed     = require('filed'),
     args      = process.argv;
 
 //var node = args[0];
@@ -29,34 +30,7 @@ var staticServer = http.createServer(function(req,res){
       res.end("<html><body><p style='font-size:28px;'>bridge is not ready :(<p></body></html>");
     }
   }else{
-    // for bridge.html
-    var extname = path.extname(req.url),
-        contentType = 'text/plain';
-    switch (extname) {
-      case '.html':
-        contentType = 'text/html';
-        break;
-      case '.js':
-        contentType = 'text/javascript';
-        break;
-      case '.css':
-        contentType = 'text/css';
-        break;
-      case '.png':
-        contentType = 'image/png';
-        break;
-      default:
-        contentType = 'text/plain';
-    }
-    fs.readFile(__dirname + "/public" + requestUrl.path, function(err, data) {
-      if(!err) {
-        res.writeHead(200, {'Content-Type': contentType});
-        res.end(data);
-      } else {
-        res.writeHead(404, {'Content-Type': 'text/html'});
-        res.end("<html><body><p style='font-size:28px;'>404 Sorry :(<p></body></html>");
-      }
-    });
+    filed(__dirname + "/public" + requestUrl.path).pipe(res);
   }
 }).listen(port,function(){
   console.log("start local proxy. PORT: "+port);
