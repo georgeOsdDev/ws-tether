@@ -14,7 +14,10 @@ ws-tether is tethering solution for iPhone4S using websocket and node.js.
 `local-proxy` receive websocket message and pipe it to http(s) requests.
 
 ## Usage
-1.clone ws-tether into both your local Mac and cloud server (e.g:[Gehirn RS2](https://cp.gehirn.jp/#!/login))
+1.clone ws-tether into both your local Mac and cloud server
+
+(e.g: <del>[Gehirn RS2](https://cp.gehirn.jp/#!/login)</del> Gehirn stopped for supporting websockets, but Fortunately [Heroku](https://blog.heroku.com/archives/2013/10/8/websockets-public-beta) is now supporting websocket in public beta.)
+
 
 ```bash
 git clone http://github.com/georegeosddev/ws-tether.git
@@ -29,7 +32,8 @@ vi ws-tether/local-proxy/public/javascripts/config.js
 ```javascript
   var config = {
     localProxy : "ws://"+window.location.host
-    ,serverProxy : "ws://"+YourCloudServerDomein+":PORT"
+    ,serverProxy : "ws://"+YourCloudServerDomein+(":PORT") // if you chesed heroku, PORT is not necessary.
+
   }
 ```
 
@@ -71,5 +75,4 @@ use localhost:3000 for all protocol.
 Source code can be found on [github](https://github.com/georgeOsdDev/markdown-edit), licenced under [MIT](http://opensource.org/licenses/mit-license.php).
 
 Developed by [Takeharu.Oshida](http://about.me/takeharu.oshida)
-
 
